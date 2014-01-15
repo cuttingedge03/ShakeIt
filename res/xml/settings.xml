@@ -1,0 +1,26 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <PreferenceCategory android:title="Sensor Preferences" >
+        <ListPreference
+            android:defaultValue="5"
+            android:entries="@array/sensitivity"
+            android:entryValues="@array/sensitivity_values"
+            android:key="list"
+            android:summary="Select the sensitivity of shake"
+            android:title="Sensitivity" />
+    </PreferenceCategory>
+    <PreferenceCategory android:title="Music Preferences" >
+        <CheckBoxPreference
+            android:enabled="true"
+            android:key="stop_music"
+            android:summary="Check to stop the music"
+            android:title="Stop music" />
+
+        <EditTextPreference
+            android:defaultValue="30"
+            android:key="timeout"
+            android:summary="Enter the time in mins after which music should stop"
+            android:title="Timeout" />
+    </PreferenceCategory>
+
+</PreferenceScreen>
