@@ -13,7 +13,7 @@
         <CheckBoxPreference
             android:enabled="true"
             android:key="stop_music"
-            android:summary="Check to stop the music"
+            android:summary="Check to stop the music after certain time period"
             android:title="Stop music" />
 
         <EditTextPreference
@@ -21,6 +21,12 @@
             android:key="timeout"
             android:summary="Enter the time in mins after which music should stop"
             android:title="Timeout" />
+        
+        <CheckBoxPreference
+            android:enabled="true"
+            android:key="stop_music_using_proximity"
+            android:summary="Check to toggle music using proximity sensor"
+            android:title="Stop music" />
     </PreferenceCategory>
 
 </PreferenceScreen>

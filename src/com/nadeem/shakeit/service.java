@@ -32,13 +32,17 @@ public class service extends Service implements SensorEventListener {
 	PhoneStateListener phoneStateListener;
 	AlarmManager alarm;
 	Intent intent;
+	Sensor sensor = null;
+	private float mAccel; // acceleration apart from gravity
+	private float mAccelCurrent; // current acceleration including gravity
+	private float mAccelLast; // last acceleration including gravity
 	// PowerManager powermanager;
 	// PowerManager.WakeLock wakeLock;
 	public boolean screenOn = false;
 	View view;
 	public float sensitivity;
 	public int timeout;
-	public boolean stop_music;
+	public boolean stop_music, stop_music_using_proximity;
 	public static final String CMDTOGGLEPAUSE = "togglepause";
 	public static final String CMDPAUSE = "pause";
 	public static final String CMDPREVIOUS = "previous";
@@ -64,10 +68,13 @@ public class service extends Service implements SensorEventListener {
 		sensorManager.registerListener(this,
 				sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
 				SensorManager.SENSOR_DELAY_NORMAL);
-		sensorManager.registerListener(this,
-				sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY),
+		sensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
+		sensorManager.registerListener(this, sensor,
 				SensorManager.SENSOR_DELAY_NORMAL);
 		// REGISTER RECEIVER THAT HANDLES SCREEN ON AND SCREEN OFF LOGIC
+		mAccel = 0.00f;
+		mAccelCurrent = SensorManager.GRAVITY_EARTH;
+		mAccelLast = SensorManager.GRAVITY_EARTH;
 		IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_ON);
 		filter.addAction(Intent.ACTION_SCREEN_OFF);
 		BroadcastReceiver mReceiver = new ScreenReceiver();
@@ -88,6 +95,8 @@ public class service extends Service implements SensorEventListener {
 		sensitivity = intent.getFloatExtra("sensitivity", 5);
 		timeout = intent.getIntExtra("timeout", 15);
 		stop_music = intent.getBooleanExtra("stop_music", false);
+		stop_music_using_proximity = intent.getBooleanExtra(
+				"stop_music_using_proximity", false);
 		if (am.isMusicActive()) {
 			Log.d("abc", "active music");
 			stopmusic();
@@ -110,7 +119,7 @@ public class service extends Service implements SensorEventListener {
 		if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
 			getAccelerometer(event);
 		} else if (event.sensor.getType() == Sensor.TYPE_PROXIMITY) {
-			Log.d("tag", "msg");
+			// Log.d("tag", "msg");
 			getProximity(event);
 		}
 
@@ -123,13 +132,20 @@ public class service extends Service implements SensorEventListener {
 		float y = values[1];
 		float z = values[2];
 		final float z1 = z;
-		accelationSquareRoot = (x * x + y * y + z * z)
-				/ (SensorManager.GRAVITY_EARTH * SensorManager.GRAVITY_EARTH);
-		long actualTime = System.currentTimeMillis();
+
+		mAccelLast = mAccelCurrent;
+		mAccelCurrent = (float) Math.sqrt((double) (x * x + y * y + z * z));
+		float delta = mAccelCurrent - mAccelLast;
+		mAccel = mAccel * 0.9f + delta; // perform low-cut filter
+
+		// accelationSquareRoot = (x * x + y * y + z * z)
+		// / (SensorManager.GRAVITY_EARTH * SensorManager.GRAVITY_EARTH);
+		final long actualTime = System.currentTimeMillis();
 		if (actualTime - lastUpdate < 400) {
+			System.out.println("returned");
 			return;
 		}
-		lastUpdate = actualTime;
+
 		ringerMode = am.getRingerMode();
 		phoneStateListener = new PhoneStateListener() {
 			public void onCallStateChanged(int state, String incomingNumber) {
@@ -149,18 +165,30 @@ public class service extends Service implements SensorEventListener {
 																// next
 																// song
 							service.this.sendBroadcast(i);
-						} else if (accelationSquareRoot >= sensitivity) {// if
-																			// shake
-																			// then
-																			// next
-//							Intent i = new Intent(SERVICECMD);
-//							// Log.d("abc", "Service command send");
-//							i.putExtra(CMDNAME, CMDNEXT);
-//							service.this.sendBroadcast(i);
-							Intent downIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
-							KeyEvent downEvent = new KeyEvent(eventtime, eventtime, KeyEvent.ACTION_DOWN,   KeyEvent.KEYCODE_MEDIA_NEXT, 0);
-							downIntent.putExtra(Intent.EXTRA_KEY_EVENT, downEvent);
-							sendOrderedBroadcast(downIntent, null);
+							lastUpdate = actualTime;
+						} else if (mAccel >= sensitivity) {// if
+															// shake
+															// then
+															// next
+															// Intent
+															// i
+															// =
+															// new
+															// Intent(SERVICECMD);
+							// // Log.d("abc", "Service command send");
+							Intent i = new Intent(SERVICECMD);
+							i.putExtra(CMDNAME, CMDNEXT);
+							service.this.sendBroadcast(i);
+							// Intent downIntent = new Intent(
+							// Intent.ACTION_MEDIA_BUTTON, null);
+							// KeyEvent downEvent = new KeyEvent(eventtime,
+							// eventtime, KeyEvent.ACTION_DOWN,
+							// KeyEvent.KEYCODE_MEDIA_NEXT, 0);
+							// downIntent.putExtra(Intent.EXTRA_KEY_EVENT,
+							// downEvent);
+							// service.this.sendOrderedBroadcast(downIntent,
+							// null);
+							lastUpdate = actualTime;
 						}
 						// Log.d("abc", "broadcast send");
 						// } else if (z1 > 9 && z1 < 10) {
@@ -177,14 +205,14 @@ public class service extends Service implements SensorEventListener {
 						// service.this.sendBroadcast(i);
 						// }
 					} else {// if music nt active change ringer modes
-						if (!screenOn && accelationSquareRoot >= sensitivity) {// When
-																				// screen
-																				// is
-																				// on
-																				// and
-																				// shake
-																				// is
-																				// performed
+						if (!screenOn && mAccel >= sensitivity) {// When
+																	// screen
+																	// is
+																	// on
+																	// and
+																	// shake
+																	// is
+																	// performed
 							// Log.d("abc", "Screen is on");
 							if (ringerMode == AudioManager.RINGER_MODE_NORMAL) {
 								am.setRingerMode(AudioManager.RINGER_MODE_VIBRATE);
@@ -193,6 +221,7 @@ public class service extends Service implements SensorEventListener {
 							} else {
 								am.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
 							}
+							lastUpdate = actualTime;
 						}
 						// else if(!screenOn &&z1 > -10 && z1 < -9){
 						// wakeLock.release();
@@ -231,23 +260,28 @@ public class service extends Service implements SensorEventListener {
 	}
 
 	public void getProximity(SensorEvent event) {
-		Log.d("tag", "msg");
+		// Log.d("tag", "msg");
 
-		if (event.values[0] == 0) {
-			Toast.makeText(getApplicationContext(), "prox",
-					Toast.LENGTH_SHORT).show();
+		// System.out.println(event.values[0]);
+
+		if (event.values[0] < sensor.getMaximumRange()
+				&& stop_music_using_proximity) {
+//
+//			Toast.makeText(getApplicationContext(), "prox", Toast.LENGTH_SHORT)
+//					.show();
 			if (am.isMusicActive()) {
-				Toast.makeText(getApplicationContext(), "music on",
-						Toast.LENGTH_SHORT).show();
+//				Toast.makeText(getApplicationContext(), "music on",
+//						Toast.LENGTH_SHORT).show();
 				Intent i = new Intent(SERVICECMD);
 				Log.d("abc", "Service command send");
-				i.putExtra(CMDNAME, CMDSTOP);
+				i.putExtra(CMDNAME, CMDPAUSE);
 				service.this.sendBroadcast(i);
 			}
 		}
 	}
 
 	public void stopmusic() {
+
 		if (stop_music) {
 			Log.d("abc", "stop is true");
 			alarm = (AlarmManager) getSystemService(Context.ALARM_SERVICE);

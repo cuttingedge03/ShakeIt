@@ -15,6 +15,7 @@ public class MainActivity extends Activity {
 	// private long lastUpdate;
 	// AudioManager am;
 	Button button;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -26,13 +27,17 @@ public class MainActivity extends Activity {
 		float sensitivity;
 		int timeout;
 		boolean stop_music;
+		boolean stop_music_using_proximity;
 		sensitivity = Float.parseFloat(prefs.getString("list", "5"));
 		stop_music = prefs.getBoolean("stop_music", false);
+		stop_music_using_proximity = prefs.getBoolean(
+				"stop_music_using_proximity", false);
 		timeout = Integer.parseInt(prefs.getString("timeout", "30"));
 		Intent intent = new Intent(this, service.class);
 		intent.putExtra("sensitivity", sensitivity);
 		intent.putExtra("stop_music", stop_music);
 		intent.putExtra("timeout", timeout);
+		intent.putExtra("stop_music_using_proximity", stop_music_using_proximity);
 		startService(intent);
 
 	}
@@ -52,8 +57,9 @@ public class MainActivity extends Activity {
 		}
 		return super.onOptionsItemSelected(item);
 	}
-	public void click(View v){
-		startActivity(new Intent(this,ActivityDirection.class));
+
+	public void click(View v) {
+		startActivity(new Intent(this, ActivityDirection.class));
 	}
 	/*
 	 * @Override protected void onResume() { super.onResume(); // register this

@@ -41,7 +41,7 @@
 
         <activity
             android:name="com.nadeem.shakeit.ActivityDirection"
-            android:label="@string/title_activity_activity_direction" >
+            android:label="@string/activity_direction" >
         </activity>
     </application>
 
