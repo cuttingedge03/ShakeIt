@@ -9,6 +9,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 public class MainActivity extends Activity {
 	// private SensorManager sensorManager;
@@ -25,19 +26,25 @@ public class MainActivity extends Activity {
 		SharedPreferences prefs = PreferenceManager
 				.getDefaultSharedPreferences(this);
 		float sensitivity;
-		int timeout;
+		float timeout;
 		boolean stop_music;
 		boolean stop_music_using_proximity;
 		sensitivity = Float.parseFloat(prefs.getString("list", "5"));
 		stop_music = prefs.getBoolean("stop_music", false);
 		stop_music_using_proximity = prefs.getBoolean(
 				"stop_music_using_proximity", false);
-		timeout = Integer.parseInt(prefs.getString("timeout", "30"));
+		try {
+			timeout = Float.parseFloat(prefs.getString("timeout", "30"));
+		} catch (Exception e) {
+			Toast.makeText(this, "Enter correct Number format!",
+					Toast.LENGTH_SHORT).show();
+		}
 		Intent intent = new Intent(this, service.class);
 		intent.putExtra("sensitivity", sensitivity);
 		intent.putExtra("stop_music", stop_music);
 		intent.putExtra("timeout", timeout);
-		intent.putExtra("stop_music_using_proximity", stop_music_using_proximity);
+		intent.putExtra("stop_music_using_proximity",
+				stop_music_using_proximity);
 		startService(intent);
 
 	}
