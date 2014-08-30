@@ -5,7 +5,7 @@
     <string name="action_settings">Settings</string>
     <string name="shake">Just shake and enjoy the features. </string>
     <string name="directions">How to use</string>
-    <string name="title_activity_activity_direction">ActivityDirection</string>
+    <string name="activity_direction">Directions</string>
     <string name="directions_description">&lt;p&gt;The features that you can currently use is:&lt;/p&gt;
 
 &lt;p&gt;When phone is &lt;b&gt;idle&lt;/b&gt; and screen is &lt;b&gt;on&lt;/b&gt;:&lt;/p&gt;

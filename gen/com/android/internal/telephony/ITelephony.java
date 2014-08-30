@@ -1,6 +1,6 @@
 /*
  * This file is auto-generated.  DO NOT MODIFY.
- * Original file: C:\\Users\\Nadeem\\workfornadeem\\Shake-it\\src\\com\\android\\internal\\telephony\\ITelephony.aidl
+ * Original file: /home/naddy/Dropbox/workfornadeem/Shake-it/src/com/android/internal/telephony/ITelephony.aidl
  */
 package com.android.internal.telephony;
 public interface ITelephony extends android.os.IInterface

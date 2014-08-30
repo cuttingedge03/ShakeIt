@@ -3,7 +3,6 @@ package com.nadeem.shakeit;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.app.admin.DevicePolicyManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -14,16 +13,17 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.media.AudioManager;
 import android.os.IBinder;
-import android.os.PowerManager;
-import android.os.PowerManager.WakeLock;
+import android.os.SystemClock;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
+import android.widget.Toast;
 
 public class service extends Service implements SensorEventListener {
 	private SensorManager sensorManager;
-	private long lastUpdate;
+	private long lastUpdate, eventtime;
 	public int ringerMode;
 	// DevicePolicyManager deviceManger;
 	public float accelationSquareRoot;
@@ -32,8 +32,8 @@ public class service extends Service implements SensorEventListener {
 	PhoneStateListener phoneStateListener;
 	AlarmManager alarm;
 	Intent intent;
-//	PowerManager powermanager;
-//	PowerManager.WakeLock wakeLock;
+	// PowerManager powermanager;
+	// PowerManager.WakeLock wakeLock;
 	public boolean screenOn = false;
 	View view;
 	public float sensitivity;
@@ -50,16 +50,17 @@ public class service extends Service implements SensorEventListener {
 	@Override
 	public void onCreate() {
 		super.onCreate();
+		eventtime = SystemClock.uptimeMillis();
 		sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
 		telephonyManager = (TelephonyManager) this
 				.getSystemService(Context.TELEPHONY_SERVICE);
 		am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-//		powermanager = ((PowerManager) this
-//				.getSystemService(Context.POWER_SERVICE));
-//		wakeLock = powermanager.newWakeLock(
-//				PowerManager.SCREEN_BRIGHT_WAKE_LOCK
-//						| PowerManager.ACQUIRE_CAUSES_WAKEUP, "tag");
-//		wakeLock.acquire();
+		// powermanager = ((PowerManager) this
+		// .getSystemService(Context.POWER_SERVICE));
+		// wakeLock = powermanager.newWakeLock(
+		// PowerManager.SCREEN_BRIGHT_WAKE_LOCK
+		// | PowerManager.ACQUIRE_CAUSES_WAKEUP, "tag");
+		// wakeLock.acquire();
 		sensorManager.registerListener(this,
 				sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
 				SensorManager.SENSOR_DELAY_NORMAL);
@@ -108,11 +109,10 @@ public class service extends Service implements SensorEventListener {
 	public void onSensorChanged(SensorEvent event) {
 		if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
 			getAccelerometer(event);
+		} else if (event.sensor.getType() == Sensor.TYPE_PROXIMITY) {
+			Log.d("tag", "msg");
+			getProximity(event);
 		}
-		// else if (event.sensor.getType() == Sensor.TYPE_PROXIMITY) {
-		// Log.d("tag", "msg");
-		// getProximity(event);
-		// }
 
 	}
 
@@ -153,10 +153,14 @@ public class service extends Service implements SensorEventListener {
 																			// shake
 																			// then
 																			// next
-							Intent i = new Intent(SERVICECMD);
-							// Log.d("abc", "Service command send");
-							i.putExtra(CMDNAME, CMDNEXT);
-							service.this.sendBroadcast(i);
+//							Intent i = new Intent(SERVICECMD);
+//							// Log.d("abc", "Service command send");
+//							i.putExtra(CMDNAME, CMDNEXT);
+//							service.this.sendBroadcast(i);
+							Intent downIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
+							KeyEvent downEvent = new KeyEvent(eventtime, eventtime, KeyEvent.ACTION_DOWN,   KeyEvent.KEYCODE_MEDIA_NEXT, 0);
+							downIntent.putExtra(Intent.EXTRA_KEY_EVENT, downEvent);
+							sendOrderedBroadcast(downIntent, null);
 						}
 						// Log.d("abc", "broadcast send");
 						// } else if (z1 > 9 && z1 < 10) {
@@ -190,12 +194,13 @@ public class service extends Service implements SensorEventListener {
 								am.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
 							}
 						}
-//						 else if(!screenOn &&z1 > -10 && z1 < -9){
-//							 wakeLock.release();
-////						 deviceManger = (DevicePolicyManager)getSystemService(
-////						 Context.DEVICE_POLICY_SERVICE);
-////						 deviceManger.lockNow();
-//						 }
+						// else if(!screenOn &&z1 > -10 && z1 < -9){
+						// wakeLock.release();
+						// // deviceManger =
+						// (DevicePolicyManager)getSystemService(
+						// // Context.DEVICE_POLICY_SERVICE);
+						// // deviceManger.lockNow();
+						// }
 						// } else if (screenOn) {// if screen is off
 						// // Log.d("abc",
 						// // "Screen is off");
@@ -225,13 +230,22 @@ public class service extends Service implements SensorEventListener {
 				PhoneStateListener.LISTEN_CALL_STATE);
 	}
 
-	// public void getProximity(SensorEvent event) {
-	// Log.d("tag", "msg");
-	// if (event.values[0] == 0) {
-	// Toast.makeText(getApplicationContext(), "aba", Toast.LENGTH_SHORT)
-	// .show();
-	// }
-	// }
+	public void getProximity(SensorEvent event) {
+		Log.d("tag", "msg");
+
+		if (event.values[0] == 0) {
+			Toast.makeText(getApplicationContext(), "prox",
+					Toast.LENGTH_SHORT).show();
+			if (am.isMusicActive()) {
+				Toast.makeText(getApplicationContext(), "music on",
+						Toast.LENGTH_SHORT).show();
+				Intent i = new Intent(SERVICECMD);
+				Log.d("abc", "Service command send");
+				i.putExtra(CMDNAME, CMDSTOP);
+				service.this.sendBroadcast(i);
+			}
+		}
+	}
 
 	public void stopmusic() {
 		if (stop_music) {
